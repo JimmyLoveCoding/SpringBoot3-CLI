@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rosy.main.mapper.AttendanceMapper">
+
+    <select id="selectStudentAttendanceStatistics" resultType="com.rosy.main.domain.vo.AttendanceStatisticsVO">
+        SELECT
+            s.id AS studentId,
+            s.name AS studentName,
+            s.student_no AS studentNo,
+            c.id AS courseId,
+            c.course_name AS courseName,
+            COUNT(a.id) AS totalClasses,
+            SUM(CASE WHEN a.status = 1 THEN 1 ELSE 0 END) AS attendedCount,
+            SUM(CASE WHEN a.status = 2 THEN 1 ELSE 0 END) AS lateCount,
+            SUM(CASE WHEN a.status = 4 THEN 1 ELSE 0 END) AS absentCount,
+            SUM(CASE WHEN a.status = 5 THEN 1 ELSE 0 END) AS leaveCount,
+            CASE WHEN COUNT(a.id) > 0
+                THEN ROUND(SUM(CASE WHEN a.status IN (1, 2, 5) THEN 1 ELSE 0 END) * 100.0 / COUNT(a.id), 2)
+                ELSE 0 END AS attendanceRate
+        FROM student s
+        JOIN course_enrollment ce ON s.id = ce.student_id AND ce.is_deleted = 0
+        JOIN course c ON ce.course_id = c.id AND c.is_deleted = 0
+        LEFT JOIN attendance a ON s.id = a.student_id AND c.id = a.course_id AND a.is_deleted = 0
+        <where>
+            s.is_deleted = 0
+            <if test="courseId != null">
+                AND c.id = #{courseId}
+            </if>
+            <if test="studentId != null">
+                AND s.id = #{studentId}
+            </if>
+        </where>
+        GROUP BY s.id, c.id
+    </select>
+
+    <select id="selectCourseAttendanceStatistics" resultType="com.rosy.main.domain.vo.AttendanceStatisticsVO">
+        SELECT
+            c.id AS courseId,
+            c.course_name AS courseName,
+            COUNT(DISTINCT a.student_id) AS totalClasses,
+            SUM(CASE WHEN a.status = 1 THEN 1 ELSE 0 END) AS attendedCount,
+            SUM(CASE WHEN a.status = 2 THEN 1 ELSE 0 END) AS lateCount,
+            SUM(CASE WHEN a.status = 4 THEN 1 ELSE 0 END) AS absentCount,
+            SUM(CASE WHEN a.status = 5 THEN 1 ELSE 0 END) AS leaveCount,
+            CASE WHEN COUNT(a.id) > 0
+                THEN ROUND(SUM(CASE WHEN a.status IN (1, 2, 5) THEN 1 ELSE 0 END) * 100.0 / COUNT(a.id), 2)
+                ELSE 0 END AS attendanceRate
+        FROM course c
+        LEFT JOIN attendance a ON c.id = a.course_id AND a.is_deleted = 0
+        WHERE c.id = #{courseId} AND c.is_deleted = 0
+        GROUP BY c.id
+    </select>
+
+</mapper>
