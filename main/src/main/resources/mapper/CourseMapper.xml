@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rosy.main.mapper.CourseMapper">
+
+    <select id="selectTeacherWorkload" resultType="com.rosy.main.domain.vo.TeacherWorkloadVO">
+        SELECT
+            t.id AS teacherId,
+            t.name AS teacherName,
+            t.teacher_no AS teacherNo,
+            t.department,
+            COUNT(c.id) AS courseCount,
+            IFNULL(SUM(c.hours), 0) AS totalHours,
+            IFNULL(SUM(c.max_students), 0) AS totalStudents,
+            c.semester
+        FROM teacher t
+        LEFT JOIN course c ON t.id = c.teacher_id AND c.is_deleted = 0
+        <where>
+            t.is_deleted = 0
+            <if test="semester != null and semester != ''">
+                AND c.semester = #{semester}
+            </if>
+            <if test="teacherId != null">
+                AND t.id = #{teacherId}
+            </if>
+        </where>
+        GROUP BY t.id, c.semester
+    </select>
+
+</mapper>
