@@ -5,13 +5,14 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 用户视图对象
+ * 作业视图对象
  */
 @Data
-public class UserVO implements Serializable {
+public class AssignmentVO implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -22,42 +23,43 @@ public class UserVO implements Serializable {
     private Long id;
 
     /**
-     * 用户名
+     * 课程ID
      */
-    private String username;
+    private Long courseId;
 
     /**
-     * 真实姓名
+     * 课程名称
      */
-    private String realName;
+    private String courseName;
 
     /**
-     * 手机号
+     * 作业标题
      */
-    private String phone;
+    private String title;
 
     /**
-     * 邮箱
+     * 作业描述
      */
-    private String email;
+    private String description;
 
     /**
-     * 头像URL
+     * 附件URL
      */
-    private String avatar;
+    private String attachment;
 
     /**
-     * 角色
+     * 截止时间
      */
-    private String role;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime deadline;
 
     /**
-     * 角色文本
+     * 总分
      */
-    private String roleText;
+    private BigDecimal totalScore;
 
     /**
-     * 状态：0-禁用, 1-启用
+     * 状态：0-草稿, 1-已发布, 2-已截止
      */
     private Byte status;
 
@@ -65,6 +67,16 @@ public class UserVO implements Serializable {
      * 状态文本
      */
     private String statusText;
+
+    /**
+     * 提交人数
+     */
+    private Integer submitCount;
+
+    /**
+     * 未提交人数
+     */
+    private Integer unsubmitCount;
 
     /**
      * 创建时间

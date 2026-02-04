@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.rosy.main.mapper.StatisticsMapper">
+
+    <!-- 获取总学生数 -->
+    <select id="selectTotalStudents" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM user WHERE role = 'student' AND is_deleted = 0
+    </select>
+
+    <!-- 获取总教师数 -->
+    <select id="selectTotalTeachers" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM user WHERE role = 'teacher' AND is_deleted = 0
+    </select>
+
+    <!-- 获取总课程数 -->
+    <select id="selectTotalCourses" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM course WHERE is_deleted = 0
+    </select>
+
+    <!-- 获取总学时 -->
+    <select id="selectTotalStudyHours" resultType="java.lang.Integer">
+        SELECT IFNULL(SUM(c.credit * 16), 0) 
+        FROM course c 
+        WHERE c.is_deleted = 0
+    </select>
+
+    <!-- 获取今日出勤统计 -->
+    <select id="selectTodayAttendanceStatistics" resultType="java.util.HashMap">
+        SELECT 
+            COUNT(*) as total_count,
+            SUM(CASE WHEN status IN (1, 2, 3) THEN 1 ELSE 0 END) as present_count,
+            SUM(CASE WHEN status = 1 AND check_in_time IS NOT NULL THEN 1 ELSE 0 END) as check_in_count
+        FROM attendance 
+        WHERE attend_date = #{today} AND is_deleted = 0
+    </select>
+
+    <!-- 获取待审批请假数 -->
+    <select id="selectPendingLeaveRequests" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM leave_request WHERE status = 0 AND is_deleted = 0
+    </select>
+
+    <!-- 获取本周出勤趋势 -->
+    <select id="selectWeeklyAttendanceTrend" resultType="java.util.HashMap">
+        SELECT 
+            a.attend_date as date,
+            COUNT(*) as total_count,
+            SUM(CASE WHEN a.status IN (1, 2, 3) THEN 1 ELSE 0 END) as present_count,
+            ROUND(
+                SUM(CASE WHEN a.status IN (1, 2, 3) THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 
+                2
+            ) as attendance_rate
+        FROM attendance a
+        WHERE a.attend_date BETWEEN #{startDate} AND #{endDate}
+        AND a.is_deleted = 0
+        GROUP BY a.attend_date
+        ORDER BY a.attend_date
+    </select>
+
+    <!-- 获取课程出勤率排行 -->
+    <select id="selectCourseAttendanceRanking" resultType="java.util.HashMap">
+        SELECT 
+            c.id as course_id,
+            c.course_name,
+            ROUND(
+                AVG(
+                    CASE 
+                        WHEN att.total > 0 THEN (att.attend_count + att.leave_count) * 100.0 / att.total 
+                        ELSE 0 
+                    END
+                ), 2
+            ) as average_attendance_rate
+        FROM course c
+        LEFT JOIN (
+            SELECT 
+                course_id,
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as attend_count,
+                SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as leave_count
+            FROM attendance
+            WHERE is_deleted = 0
+            GROUP BY course_id
+        ) att ON c.id = att.course_id
+        WHERE c.is_deleted = 0
+        GROUP BY c.id, c.course_name
+        ORDER BY average_attendance_rate DESC
+        LIMIT 10
+    </select>
+
+    <!-- 获取教师上课量排行 -->
+    <select id="selectTeacherCourseRanking" resultType="java.util.HashMap">
+        SELECT 
+            u.id as teacher_id,
+            u.real_name as teacher_name,
+            COUNT(DISTINCT c.id) as course_count,
+            COUNT(DISTINCT cs.student_id) as student_count
+        FROM user u
+        LEFT JOIN course c ON u.id = c.teacher_id AND c.is_deleted = 0
+        LEFT JOIN course_student cs ON c.id = cs.course_id AND cs.is_deleted = 0
+        WHERE u.role = 'teacher' AND u.is_deleted = 0
+        GROUP BY u.id, u.real_name
+        ORDER BY course_count DESC, student_count DESC
+        LIMIT 10
+    </select>
+
+    <!-- 获取学生考勤统计 -->
+    <select id="selectStudentAttendanceStatistics" resultType="java.util.HashMap">
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as attend_count,
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as late_count,
+            SUM(CASE WHEN status = 4 THEN 1 ELSE 0 END) as early_leave_count,
+            SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as leave_count,
+            SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as absent_count
+        FROM attendance
+        WHERE student_id = #{studentId} 
+        AND course_id = #{courseId}
+        AND is_deleted = 0
+    </select>
+
+    <!-- 获取课程所有学生考勤统计 -->
+    <select id="selectCourseAllStudentsAttendance" resultType="java.util.HashMap">
+        SELECT 
+            a.student_id,
+            u.real_name as student_name,
+            COUNT(*) as total,
+            SUM(CASE WHEN a.status = 1 THEN 1 ELSE 0 END) as attend_count,
+            SUM(CASE WHEN a.status = 2 THEN 1 ELSE 0 END) as late_count,
+            SUM(CASE WHEN a.status = 4 THEN 1 ELSE 0 END) as early_leave_count,
+            SUM(CASE WHEN a.status = 3 THEN 1 ELSE 0 END) as leave_count,
+            SUM(CASE WHEN a.status = 0 THEN 1 ELSE 0 END) as absent_count
+        FROM attendance a
+        LEFT JOIN user u ON a.student_id = u.id AND u.is_deleted = 0
+        WHERE a.course_id = #{courseId}
+        AND a.is_deleted = 0
+        GROUP BY a.student_id, u.real_name
+    </select>
+
+    <!-- 获取教师统计信息 -->
+    <select id="selectTeacherStatistics" resultType="com.rosy.main.domain.vo.TeacherStatisticsVO">
+        SELECT 
+            u.id as teacher_id,
+            u.real_name as teacher_name,
+            COUNT(DISTINCT c.id) as course_count,
+            COUNT(DISTINCT cs.student_id) as student_count,
+            COUNT(DISTINCT a.id) as assignment_count,
+            COUNT(DISTINCT cm.id) as material_count,
+            IFNULL(SUM(DISTINCT c.credit * 16), 0) as total_hours
+        FROM user u
+        LEFT JOIN course c ON u.id = c.teacher_id AND c.is_deleted = 0
+        LEFT JOIN course_student cs ON c.id = cs.course_id AND cs.is_deleted = 0
+        LEFT JOIN assignment a ON c.id = a.course_id AND a.is_deleted = 0
+        LEFT JOIN course_material cm ON c.id = cm.course_id AND cm.is_deleted = 0
+        WHERE u.id = #{teacherId}
+        AND u.role = 'teacher'
+        AND u.is_deleted = 0
+        GROUP BY u.id, u.real_name
+    </select>
+
+    <!-- 获取所有教师统计 -->
+    <select id="selectAllTeacherStatistics" resultType="com.rosy.main.domain.vo.TeacherStatisticsVO">
+        SELECT 
+            u.id as teacher_id,
+            u.real_name as teacher_name,
+            COUNT(DISTINCT c.id) as course_count,
+            COUNT(DISTINCT cs.student_id) as student_count,
+            COUNT(DISTINCT a.id) as assignment_count,
+            COUNT(DISTINCT cm.id) as material_count,
+            IFNULL(SUM(DISTINCT c.credit * 16), 0) as total_hours
+        FROM user u
+        LEFT JOIN course c ON u.id = c.teacher_id AND c.is_deleted = 0
+        LEFT JOIN course_student cs ON c.id = cs.course_id AND cs.is_deleted = 0
+        LEFT JOIN assignment a ON c.id = a.course_id AND a.is_deleted = 0
+        LEFT JOIN course_material cm ON c.id = cm.course_id AND cm.is_deleted = 0
+        WHERE u.role = 'teacher'
+        AND u.is_deleted = 0
+        GROUP BY u.id, u.real_name
+    </select>
+
+    <!-- 获取课程统计信息 -->
+    <select id="selectCourseStatistics" resultType="com.rosy.main.domain.vo.CourseStatisticsVO">
+        SELECT 
+            c.id as course_id,
+            c.course_name,
+            c.course_code,
+            c.teacher_id,
+            u.real_name as teacher_name,
+            COUNT(DISTINCT cs.student_id) as student_count,
+            COUNT(DISTINCT a.id) as assignment_count,
+            COUNT(DISTINCT cm.id) as material_count,
+            COUNT(DISTINCT cd.id) as discussion_count,
+            (SELECT COUNT(*) FROM attendance WHERE course_id = c.id AND is_deleted = 0) as total_classes,
+            ROUND(
+                (SELECT AVG(
+                    CASE 
+                        WHEN sub.total > 0 THEN (sub.attend_count + sub.leave_count) * 100.0 / sub.total 
+                        ELSE 0 
+                    END
+                )
+                FROM (
+                    SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as attend_count,
+                        SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as leave_count
+                    FROM attendance
+                    WHERE course_id = c.id AND is_deleted = 0
+                    GROUP BY student_id
+                ) sub), 2
+            ) as average_attendance_rate,
+            ROUND(
+                (SELECT AVG(score) FROM course_student WHERE course_id = c.id AND score IS NOT NULL AND is_deleted = 0), 2
+            ) as average_score
+        FROM course c
+        LEFT JOIN user u ON c.teacher_id = u.id AND u.is_deleted = 0
+        LEFT JOIN course_student cs ON c.id = cs.course_id AND cs.is_deleted = 0
+        LEFT JOIN assignment a ON c.id = a.course_id AND a.is_deleted = 0
+        LEFT JOIN course_material cm ON c.id = cm.course_id AND cm.is_deleted = 0
+        LEFT JOIN course_discussion cd ON c.id = cd.course_id AND cd.is_deleted = 0 AND cd.parent_id IS NULL
+        WHERE c.id = #{courseId}
+        AND c.is_deleted = 0
+        GROUP BY c.id, c.course_name, c.course_code, c.teacher_id, u.real_name
+    </select>
+
+    <!-- 获取所有课程统计 -->
+    <select id="selectAllCourseStatistics" resultType="com.rosy.main.domain.vo.CourseStatisticsVO">
+        SELECT 
+            c.id as course_id,
+            c.course_name,
+            c.course_code,
+            c.teacher_id,
+            u.real_name as teacher_name,
+            COUNT(DISTINCT cs.student_id) as student_count,
+            COUNT(DISTINCT a.id) as assignment_count,
+            COUNT(DISTINCT cm.id) as material_count,
+            COUNT(DISTINCT cd.id) as discussion_count,
+            (SELECT COUNT(*) FROM attendance WHERE course_id = c.id AND is_deleted = 0) as total_classes,
+            ROUND(
+                (SELECT AVG(
+                    CASE 
+                        WHEN sub.total > 0 THEN (sub.attend_count + sub.leave_count) * 100.0 / sub.total 
+                        ELSE 0 
+                    END
+                )
+                FROM (
+                    SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as attend_count,
+                        SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as leave_count
+                    FROM attendance
+                    WHERE course_id = c.id AND is_deleted = 0
+                    GROUP BY student_id
+                ) sub), 2
+            ) as average_attendance_rate,
+            ROUND(
+                (SELECT AVG(score) FROM course_student WHERE course_id = c.id AND score IS NOT NULL AND is_deleted = 0), 2
+            ) as average_score
+        FROM course c
+        LEFT JOIN user u ON c.teacher_id = u.id AND u.is_deleted = 0
+        LEFT JOIN course_student cs ON c.id = cs.course_id AND cs.is_deleted = 0
+        LEFT JOIN assignment a ON c.id = a.course_id AND a.is_deleted = 0
+        LEFT JOIN course_material cm ON c.id = cm.course_id AND cm.is_deleted = 0
+        LEFT JOIN course_discussion cd ON c.id = cd.course_id AND cd.is_deleted = 0 AND cd.parent_id IS NULL
+        WHERE c.is_deleted = 0
+        GROUP BY c.id, c.course_name, c.course_code, c.teacher_id, u.real_name
+    </select>
+
+</mapper>

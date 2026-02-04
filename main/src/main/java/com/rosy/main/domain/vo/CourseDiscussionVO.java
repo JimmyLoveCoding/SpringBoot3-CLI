@@ -6,12 +6,13 @@ import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
- * 用户视图对象
+ * 课程讨论视图对象
  */
 @Data
-public class UserVO implements Serializable {
+public class CourseDiscussionVO implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -22,49 +23,59 @@ public class UserVO implements Serializable {
     private Long id;
 
     /**
-     * 用户名
+     * 课程ID
      */
-    private String username;
+    private Long courseId;
 
     /**
-     * 真实姓名
+     * 课程名称
      */
-    private String realName;
+    private String courseName;
 
     /**
-     * 手机号
+     * 发布者ID
      */
-    private String phone;
+    private Long userId;
 
     /**
-     * 邮箱
+     * 发布者姓名
      */
-    private String email;
+    private String userName;
 
     /**
-     * 头像URL
+     * 发布者头像
      */
-    private String avatar;
+    private String userAvatar;
 
     /**
-     * 角色
+     * 父评论ID
      */
-    private String role;
+    private Long parentId;
 
     /**
-     * 角色文本
+     * 评论内容
      */
-    private String roleText;
+    private String content;
 
     /**
-     * 状态：0-禁用, 1-启用
+     * 附件URL
      */
-    private Byte status;
+    private String attachment;
 
     /**
-     * 状态文本
+     * 点赞数
      */
-    private String statusText;
+    private Integer likeCount;
+
+    /**
+     * 是否置顶：0-否, 1-是
+     */
+    private Byte isTop;
+
+    /**
+     * 回复列表
+     */
+    private List<CourseDiscussionVO> replies;
 
     /**
      * 创建时间

@@ -8,10 +8,10 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 用户视图对象
+ * 课程资料视图对象
  */
 @Data
-public class UserVO implements Serializable {
+public class CourseMaterialVO implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -22,49 +22,59 @@ public class UserVO implements Serializable {
     private Long id;
 
     /**
-     * 用户名
+     * 课程ID
      */
-    private String username;
+    private Long courseId;
 
     /**
-     * 真实姓名
+     * 课程名称
      */
-    private String realName;
+    private String courseName;
 
     /**
-     * 手机号
+     * 资料标题
      */
-    private String phone;
+    private String title;
 
     /**
-     * 邮箱
+     * 资料描述
      */
-    private String email;
+    private String description;
 
     /**
-     * 头像URL
+     * 文件URL
      */
-    private String avatar;
+    private String fileUrl;
 
     /**
-     * 角色
+     * 文件类型
      */
-    private String role;
+    private String fileType;
 
     /**
-     * 角色文本
+     * 文件大小（字节）
      */
-    private String roleText;
+    private Long fileSize;
 
     /**
-     * 状态：0-禁用, 1-启用
+     * 文件大小文本（自动转换）
      */
-    private Byte status;
+    private String fileSizeText;
 
     /**
-     * 状态文本
+     * 下载次数
      */
-    private String statusText;
+    private Integer downloadCount;
+
+    /**
+     * 上传者ID
+     */
+    private Long creatorId;
+
+    /**
+     * 上传者姓名
+     */
+    private String creatorName;
 
     /**
      * 创建时间

@@ -5,13 +5,14 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 用户视图对象
+ * 课程视图对象
  */
 @Data
-public class UserVO implements Serializable {
+public class CourseVO implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -22,42 +23,62 @@ public class UserVO implements Serializable {
     private Long id;
 
     /**
-     * 用户名
+     * 课程编号
      */
-    private String username;
+    private String courseCode;
 
     /**
-     * 真实姓名
+     * 课程名称
      */
-    private String realName;
+    private String courseName;
 
     /**
-     * 手机号
+     * 学分
      */
-    private String phone;
+    private BigDecimal credit;
 
     /**
-     * 邮箱
+     * 教师ID
      */
-    private String email;
+    private Long teacherId;
 
     /**
-     * 头像URL
+     * 教师姓名
      */
-    private String avatar;
+    private String teacherName;
 
     /**
-     * 角色
+     * 教室
      */
-    private String role;
+    private String classroom;
 
     /**
-     * 角色文本
+     * 上课时间
      */
-    private String roleText;
+    private String schedule;
 
     /**
-     * 状态：0-禁用, 1-启用
+     * 学期
+     */
+    private String semester;
+
+    /**
+     * 课程描述
+     */
+    private String description;
+
+    /**
+     * 最大学生数
+     */
+    private Integer maxStudents;
+
+    /**
+     * 当前学生数
+     */
+    private Integer currentStudents;
+
+    /**
+     * 状态：0-未开课, 1-进行中, 2-已结课
      */
     private Byte status;
 
